@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Firewall - Enterprise SOC Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart Library -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <!-- Cyber Grid Overlay Background -->
+    <div class="cyber-grid"></div>
+    <div class="glow-orb" id="orb-1"></div>
+    <div class="glow-orb" id="orb-2"></div>
+
+    <div class="dashboard-wrapper">
+        <!-- TOP NAVIGATION HEADER -->
+        <header class="soc-header">
+            <div class="brand">
+                <i class="fa-solid fa-shield-halved brand-logo"></i>
+                <div class="brand-text">
+                    <h1>PERSONAL FIREWALL</h1>
+                    <span>SECURITY OPERATIONS CENTER // PORTAL</span>
+                </div>
+            </div>
+
+            <!-- Global Hardware & Traffic HUD -->
+            <div class="hud-stats">
+                <div class="hud-item">
+                    <span class="hud-label">STATUS</span>
+                    <div class="status-indicator active" id="fw-status-badge">
+                        <span class="pulse-dot"></span>
+                        <span id="fw-status-text">ACTIVE</span>
+                    </div>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">MODE</span>
+                    <span class="hud-val font-mono" id="fw-mode-text" style="color: var(--neon-blue);">SNIFFER</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">CPU USAGE</span>
+                    <div class="hud-bar-container">
+                        <div class="hud-bar-fill" id="cpu-bar" style="width: 12%;"></div>
+                    </div>
+                    <span class="hud-val font-mono" id="cpu-text">12%</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">RAM USAGE</span>
+                    <div class="hud-bar-container">
+                        <div class="hud-bar-fill" id="ram-bar" style="width: 45%; background-color: var(--purple-accent);"></div>
+                    </div>
+                    <span class="hud-val font-mono" id="ram-text">45%</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">NET SPEED</span>
+                    <span class="hud-val font-mono" style="color: var(--cyber-green);">
+                        <i class="fa-solid fa-arrow-down"></i> <span id="net-down">0.0</span> KB/s
+                    </span>
+                    <span class="hud-val font-mono" style="color: var(--neon-blue);">
+                        <i class="fa-solid fa-arrow-up"></i> <span id="net-up">0.0</span> KB/s
+                    </span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="header-controls">
+                <button class="btn btn-outline" id="btn-toggle-fw" title="Toggle Firewall State">
+                    <i class="fa-solid fa-power-off"></i> STOP FIREWALL
+                </button>
+                <button class="btn btn-icon" id="btn-refresh-dashboard" title="Manual System Sync">
+                    <i class="fa-solid fa-rotate"></i>
+                </button>
+                <div class="theme-toggle" id="theme-switch" title="Toggle Visual Mode">
+                    <i class="fa-solid fa-moon"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN SOC OVERVIEW CARDS -->
+        <section class="overview-grid">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(0, 212, 255, 0.1); color: var(--neon-blue);">
+                    <i class="fa-solid fa-network-wired"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">TOTAL PACKETS</span>
+                    <h3 id="stat-total-packets" class="font-mono">0</h3>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(255, 59, 92, 0.1); color: var(--alert-red);">
+                    <i class="fa-solid fa-ban"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">BLOCKED PACKETS</span>
+                    <h3 id="stat-blocked-packets" class="font-mono">0</h3>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(0, 255, 136, 0.1); color: var(--cyber-green);">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">ALLOWED PACKETS</span>
+                    <h3 id="stat-allowed-packets" class="font-mono">0</h3>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(255, 179, 71, 0.1); color: var(--warning-orange);">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">THREATS DETECTED</span>
+                    <h3 id="stat-threats" class="font-mono">0</h3>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(139, 92, 246, 0.1); color: var(--purple-accent);">
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">ACTIVE RULES</span>
+                    <h3 id="stat-rules" class="font-mono">0</h3>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(0, 212, 255, 0.1); color: var(--neon-blue);">
+                    <i class="fa-solid fa-ethernet"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">ACTIVE CONNS</span>
+                    <h3 id="stat-connections" class="font-mono">0</h3>
+                </div>
+            </div>
+        </section>
+
+        <!-- SOC REAL-TIME ATTACK MAP & METRICS -->
+        <section class="map-charts-grid">
+            <!-- Global Threat Map Component -->
+            <div class="soc-card map-card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-earth-americas"></i> LIVE GLOBAL THREAT INTERCEPT MAP</h2>
+                    <div class="pulse-container">
+                        <span class="live-ping"></span>
+                        <span style="font-size: 10px; font-weight: bold; color: var(--cyber-green);">LIVE FEED</span>
+                    </div>
+                </div>
+                <div class="card-body map-body">
+                    <canvas id="attack-map-canvas"></canvas>
+                    <div class="map-overlay-threat-feed">
+                        <div class="feed-title">INTELLIGENCE BRIEFING (SIMULATED)</div>
+                        <ul class="threat-feed-list" id="simulated-intel-feed">
+                            <!-- Populated dynamically -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Alarms / Threats Feed -->
+            <div class="soc-card alerts-card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-bell"></i> SECURITY ALERT THREAT CONSOLE</h2>
+                    <span class="alert-indicator" id="alert-indicator-badge">0 NEW ALERTS</span>
+                </div>
+                <div class="card-body scroll-body" id="alerts-console-feed">
+                    <!-- Threat alerts stack -->
+                    <div class="no-alerts-placeholder" id="no-alerts-placeholder">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <p>No active anomalies or network threats detected</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PERFORMANCE CHARTS ROW -->
+        <section class="charts-row">
+            <div class="soc-card chart-card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-chart-line"></i> NET TRAFFIC OVERVIEW (PACKETS/SEC)</h2>
+                </div>
+                <div class="card-body">
+                    <div id="chart-traffic"></div>
+                </div>
+            </div>
+            <div class="soc-card chart-card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-chart-pie"></i> PROTOCOL DISTRIBUTION</h2>
+                </div>
+                <div class="card-body">
+                    <div id="chart-protocols"></div>
+                </div>
+            </div>
+            <div class="soc-card chart-card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-ranking-star"></i> SOURCE & DESTINATION IP METRICS</h2>
+                </div>
+                <div class="card-body">
+                    <div id="chart-top-ips"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- COMMAND CENTER CONSOLE TABS -->
+        <section class="console-tabs-section">
+            <!-- Tab Headers -->
+            <div class="tab-headers">
+                <button class="tab-btn active" data-target="tab-packet-capture">
+                    <i class="fa-solid fa-terminal"></i> LIVE PACKET MONITOR
+                </button>
+                <button class="tab-btn" data-target="tab-rules-manager">
+                    <i class="fa-solid fa-sliders"></i> FIREWALL RULE EDITOR
+                </button>
+                <button class="tab-btn" data-target="tab-process-monitor">
+                    <i class="fa-solid fa-microchip"></i> ACTIVE CONNECTION PROCESSES
+                </button>
+                <button class="tab-btn" data-target="tab-audit-logs">
+                    <i class="fa-solid fa-folder-open"></i> HISTORICAL AUDIT LOGS
+                </button>
+            </div>
+
+            <!-- Tab Contents -->
+            <div class="tab-contents">
+                
+                <!-- 1. Packet Capture Console -->
+                <div class="tab-pane active" id="tab-packet-capture">
+                    <div class="filter-bar">
+                        <div class="search-input">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="packet-search" placeholder="Search by source/destination IP...">
+                        </div>
+                        <select id="packet-filter-proto">
+                            <option value="ALL">All Protocols</option>
+                            <option value="TCP">TCP</option>
+                            <option value="UDP">UDP</option>
+                            <option value="ICMP">ICMP</option>
+                        </select>
+                        <select id="packet-filter-action">
+                            <option value="ALL">All Actions</option>
+                            <option value="Allow">Allowed Only</option>
+                            <option value="Block">Blocked Only</option>
+                        </select>
+                        <div class="console-stream-status">
+                            <span class="dot-glowing green"></span> STREAMING
+                        </div>
+                    </div>
+                    
+                    <div class="table-container font-mono">
+                        <table id="packet-table">
+                            <thead>
+                                <tr>
+                                    <th>TIMESTAMP</th>
+                                    <th>PROTOCOL</th>
+                                    <th>SOURCE IP</th>
+                                    <th>SOURCE PORT</th>
+                                    <th>DESTINATION IP</th>
+                                    <th>DESTINATION PORT</th>
+                                    <th>SIZE (B)</th>
+                                    <th>ACTION</th>
+                                </tr>
+                            </thead>
+                            <tbody id="packet-table-body">
+                                <tr>
+                                    <td colspan="8" style="text-align: center; color: var(--text-muted);">Awaiting network interface bind...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 2. Firewall Rules Manager -->
+                <div class="tab-pane" id="tab-rules-manager">
+                    <div class="rules-management-container">
+                        <!-- Left Panel: Rules List -->
+                        <div class="rules-list-panel">
+                            <div class="panel-subheader">
+                                <h3>ACTIVE FIREWALL RULESETS</h3>
+                                <button class="btn btn-primary" id="btn-show-rule-form">
+                                    <i class="fa-solid fa-plus"></i> NEW RULE
+                                </button>
+                            </div>
+                            
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>NAME</th>
+                                            <th>DIRECTION</th>
+                                            <th>PROTO</th>
+                                            <th>SRC IP/PORT</th>
+                                            <th>DEST IP/PORT</th>
+                                            <th>ACTION</th>
+                                            <th>STATE</th>
+                                            <th>ACTIONS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="rules-table-body">
+                                        <!-- Populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Add/Edit Form Overlay -->
+                        <div class="rules-form-panel hidden" id="rules-form-overlay">
+                            <div class="panel-subheader">
+                                <h3 id="rule-form-title">CREATE NETWORK ACCESS RULE</h3>
+                                <button class="btn btn-icon" id="btn-close-rule-form">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                            
+                            <form id="rule-config-form">
+                                <input type="hidden" id="form-rule-id">
+                                
+                                <div class="form-group">
+                                    <label for="rule-name">Rule Name</label>
+                                    <input type="text" id="rule-name" required placeholder="e.g. Block Ransomware Server">
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="rule-protocol">Protocol</label>
+                                        <select id="rule-protocol">
+                                            <option value="ANY">ANY</option>
+                                            <option value="TCP">TCP</option>
+                                            <option value="UDP">UDP</option>
+                                            <option value="ICMP">ICMP</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="rule-direction">Direction</label>
+                                        <select id="rule-direction">
+                                            <option value="Both">Both (Inbound/Outbound)</option>
+                                            <option value="Inbound">Inbound</option>
+                                            <option value="Outbound">Outbound</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="rule-source-ip">Source IP Filter</label>
+                                        <input type="text" id="rule-source-ip" placeholder="e.g. 192.168.1.50 or leave blank">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="rule-source-port">Source Port</label>
+                                        <input type="number" id="rule-source-port" placeholder="e.g. 22 or leave blank">
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="rule-destination-ip">Destination IP Filter</label>
+                                        <input type="text" id="rule-destination-ip" placeholder="e.g. 8.8.8.8 or leave blank">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="rule-destination-port">Destination Port</label>
+                                        <input type="number" id="rule-destination-port" placeholder="e.g. 443 or leave blank">
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="rule-action">Firewall Action</label>
+                                        <select id="rule-action">
+                                            <option value="Allow">ALLOW Traffic</option>
+                                            <option value="Deny">DENY (Block) Traffic</option>
+                                            <option value="Log">LOG and Allow</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group flex-align-end">
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" id="rule-enabled" checked>
+                                            <span class="checkbox-label">Activate Immediately</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="button" class="btn btn-outline" id="btn-cancel-rule">Cancel</button>
+                                    <button type="submit" class="btn btn-primary">Save Ruleset</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Connection Monitor Panel -->
+                <div class="tab-pane" id="tab-process-monitor">
+                    <div class="panel-subheader">
+                        <h3>ACTIVE ENDPOINT CONNECTION SOCKETS</h3>
+                        <span class="info-text">Showing processes listening or actively communicating on network ports.</span>
+                    </div>
+                    
+                    <div class="table-container font-mono">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>PID</th>
+                                    <th>PROCESS NAME</th>
+                                    <th>LOCAL SOCKET ADDRESS</th>
+                                    <th>REMOTE SOCKET ADDRESS</th>
+                                    <th>PROTOCOL</th>
+                                    <th>STATUS</th>
+                                    <th>UPLOAD / DOWNLOAD SPEED</th>
+                                    <th>THREAT MITIGATION ACTION</th>
+                                </tr>
+                            </thead>
+                            <tbody id="connections-table-body">
+                                <tr>
+                                    <td colspan="8" style="text-align: center; color: var(--text-muted);">Collecting active process telemetry...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 4. Historical Audit Logs -->
+                <div class="tab-pane" id="tab-audit-logs">
+                    <div class="filter-bar border-bottom">
+                        <div class="search-input">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="log-search-query" placeholder="Filter audit event logs...">
+                        </div>
+                        <select id="log-type-selector">
+                            <option value="packets">Traffic (Packets Log)</option>
+                            <option value="events">System (Event Logs)</option>
+                        </select>
+                        
+                        <!-- Actions for export -->
+                        <div class="export-controls">
+                            <span class="export-label">EXPORT AUDIT:</span>
+                            <button class="btn btn-sm btn-outline" id="btn-export-csv"><i class="fa-solid fa-file-csv"></i> CSV</button>
+                            <button class="btn btn-sm btn-outline" id="btn-export-json"><i class="fa-solid fa-file-code"></i> JSON</button>
+                            <button class="btn btn-sm btn-outline" id="btn-export-pdf"><i class="fa-solid fa-file-pdf"></i> PRINT REPORT</button>
+                        </div>
+                    </div>
+
+                    <!-- Filter Options for Packets Logs (Shown when packets are selected) -->
+                    <div class="filter-bar font-mono" id="audit-packet-filters-sub">
+                        <select id="audit-filter-proto">
+                            <option value="ALL">ALL Protocols</option>
+                            <option value="TCP">TCP Only</option>
+                            <option value="UDP">UDP Only</option>
+                            <option value="ICMP">ICMP Only</option>
+                        </select>
+                        <select id="audit-filter-action">
+                            <option value="ALL">ALL Actions</option>
+                            <option value="Allow">Allow Matches</option>
+                            <option value="Block">Block Matches</option>
+                        </select>
+                        <button class="btn btn-outline" id="btn-apply-audit-filters">Apply Filters</button>
+                    </div>
+
+                    <div class="table-container font-mono">
+                        <table id="audit-log-table">
+                            <thead>
+                                <tr id="audit-table-headers">
+                                    <!-- Dynamic header injection -->
+                                </tr>
+                            </thead>
+                            <tbody id="audit-table-body">
+                                <tr>
+                                    <td colspan="6" style="text-align: center; color: var(--text-muted);">Execute search query to parse sqlite logs...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </div>
+
+    <!-- Notification system popups -->
+    <div class="notification-container" id="toast-container"></div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
